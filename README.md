@@ -25,16 +25,15 @@ retrains with those groups balanced:
 ## A bug I faced: clustering a model that has already memorized the shortcut
 
 The first pass through this pipeline clustered features from the **fully-trained**
-10-epoch ERM model. By epoch 10, the model has fit even the ~1% minority examples, which
+10-epoch ERM model. By epoch 10, the model has fit the minority examples, which
 pulls their features inward until they sit on top of the majority examples of the same
-class. There is nothing left in that feature space for KMeans to separate — the clusters
-it found didn't track background at all, so group-balanced retraining barely moved worst-
-group accuracy (10.2% → 28.0%).
+class. There is nothing left in that feature space for KMeans to separate, so group-balanced retraining 
+barely moved worst-group accuracy (10.2% → 28.0%).
 
 **Fix:** cluster features from a deliberately **under-trained** snapshot (1 epoch) instead.
 Early in training, the background is the dominant, easiest-to-fit signal, and the model has
-not yet memorized the minority examples — so their features are still geometrically
-separated from the majority blob, and KMeans can actually recover the groups.
+not yet memorized the minority examples, so their features are still geometrically
+separated from the majority blob.
 
 ## Result
 
@@ -44,8 +43,3 @@ separated from the majority blob, and KMeans can actually recover the groups.
 | GEORGE, clustered on overfit features | 69.3% | 28.0% |
 | **GEORGE, clustered on underfit features** | **89.9%** | **66.0%** |
 
-Clustering on underfit features closes most of the gap: worst-group accuracy goes from
-being 6x worse than average to being roughly in line with it, with no loss in overall
-accuracy. Group-balanced retraining was correct all along — the inferred groups were the
-part that needed to actually reflect the true background, and that only happens if you
-extract them before the model has had the chance to memorize past them.
